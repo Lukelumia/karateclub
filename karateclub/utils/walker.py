@@ -1,5 +1,6 @@
 import random
 import networkx as nx
+import tqdm.auto as tqdm
 
 class RandomWalker:
     """
@@ -9,9 +10,10 @@ class RandomWalker:
         walk_length (int): Number of random walks.
         walk_number (int): Number of nodes in truncated walk.
     """
-    def __init__(self, walk_length, walk_number):
+    def __init__(self, walk_length, walk_number, silent=False):
         self.walk_length = walk_length
         self.walk_number = walk_number
+        self.silent = silent
 
     def do_walk(self, node):
         """
@@ -25,7 +27,7 @@ class RandomWalker:
         """
         walk = [node]
         for _ in range(self.walk_length-1):
-            nebs = [node for node in self.graph.neighbors(walk[-1])]
+            nebs = self.neighbors[walk[-1]]
             if len(nebs) > 0:
                 walk = walk + random.sample(nebs, 1)
         walk = [str(w) for w in walk]
@@ -40,7 +42,15 @@ class RandomWalker:
         """
         self.walks = []
         self.graph = graph
-        for node in self.graph.nodes():
+        self.neighbors = dict()
+        for node in graph.nodes():
+            self.neighbors[node] = list(graph.neighbors(node))
+
+        if self.silent:
+            iter = self.graph.nodes()
+        else:
+            iter = tqdm(self.graph.nodes(), desc=f'Generating walks ({self.walk_number} per node)')
+        for node in iter:
             for _ in range(self.walk_number):
                 walk_from_node = self.do_walk(node)
                 self.walks.append(walk_from_node)
