@@ -50,7 +50,7 @@ class DeepWalk(Estimator):
         for folder in folders:
             if not folder.lower().startswith(self.cached_prefix):
                 continue
-            folder_walk_length, folder_walk_number = folder.split(f'{self.cached_prefix}')[1].split('_')
+            folder_walk_number, folder_walk_length = folder.split(f'{self.cached_prefix}_')[1].split('_')
             if int(folder_walk_length) >= self.walk_length and int(folder_walk_number) >= self.walk_number:
                 prewalk_file = os.path.join(self.cached_walks_path, folder, 'walks_dump.jsonl')
                 if os.path.isfile(prewalk_file):
