@@ -6,6 +6,9 @@ from karateclub.utils.walker import RandomWalker
 from karateclub.estimator import Estimator
 from src.model.helpers import generator_as_iterator
 import jsonlines
+from cidatakit.utils.logging import setup_logging
+
+logger = setup_logging(__name__)
 
 class DeepWalk(Estimator):
     r"""An implementation of `"DeepWalk" <https://arxiv.org/abs/1403.6652>`_
@@ -63,7 +66,7 @@ class DeepWalk(Estimator):
         #     return jsonlines.open(self.prewalk_file).iter()
         def open_file():
             folder_name = os.path.basename(os.path.dirname(self.prewalk_file))
-            file_walk_length, file_walk_number = folder_name.split('prewalking_deepwalk_')[1].split('_')
+            file_walk_length, file_walk_number = folder_name.split(f'{self.cached_prefix}_')[1].split('_')
             with jsonlines.open(self.prewalk_file) as reader:
                 for num, line in enumerate(reader):
                     if num % int(file_walk_number) < self.walk_number:
@@ -108,7 +111,7 @@ class DeepWalk(Estimator):
                 self._embedding.append(model[str(x)])
                 x+=1
             except:
-                print('found {x} consecutive nodes')
+                logger.info('found {x} consecutive nodes')
                 break
 
 
