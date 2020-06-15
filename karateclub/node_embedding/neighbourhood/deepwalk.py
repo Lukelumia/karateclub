@@ -8,7 +8,7 @@ from src.model.helpers import generator_as_iterator
 import jsonlines
 from cidatakit.utils.logging import setup_logging
 
-logger = setup_logging(__name__)
+logger = setup_logging('src.model.deepwalk.walker')
 
 class DeepWalk(Estimator):
     r"""An implementation of `"DeepWalk" <https://arxiv.org/abs/1403.6652>`_
@@ -51,9 +51,11 @@ class DeepWalk(Estimator):
         expected_folder_name = f'{self.cached_prefix}_{self.walk_length}_{self.walk_number}'.lower()
         folders = os.listdir(self.cached_walks_path)
         for folder in folders:
-            if not folder.lower().startswith(self.cached_prefix):
+            folder_name, folder_walk_number, folder_walk_length = folder.rsplit('_', 2)
+            if not folder_name.lower().startswith(self.cached_prefix):
                 continue
-            folder_walk_number, folder_walk_length = folder.split(f'{self.cached_prefix}_')[1].split('_')
+            if folder_name.lower() != folder_name.lower():
+                continue
             if int(folder_walk_length) >= self.walk_length and int(folder_walk_number) >= self.walk_number:
                 prewalk_file = os.path.join(self.cached_walks_path, folder, 'walks_dump.jsonl')
                 if os.path.isfile(prewalk_file):
@@ -66,7 +68,7 @@ class DeepWalk(Estimator):
         #     return jsonlines.open(self.prewalk_file).iter()
         def open_file():
             folder_name = os.path.basename(os.path.dirname(self.prewalk_file))
-            file_walk_length, file_walk_number = folder_name.split(f'{self.cached_prefix}_')[1].split('_')
+            file_walk_length, file_walk_number = folder_name.rsplit('_', 2)[1:]
             with jsonlines.open(self.prewalk_file) as reader:
                 for num, line in enumerate(reader):
                     if num % int(file_walk_number) < self.walk_number:
@@ -92,7 +94,7 @@ class DeepWalk(Estimator):
             # This returns a iterator
             sentences = self.load_prewalk()
 
-        model = Word2Vec(sentences,
+        self.model = Word2Vec(sentences,
                          hs=1,
                          alpha=self.learning_rate,
                          iter=self.epochs,
@@ -104,15 +106,18 @@ class DeepWalk(Estimator):
         # num_of_nodes = graph.number_of_nodes()
         # self._embedding = [model[str(n)] for n in range(num_of_nodes)]
 
-        self._embedding = list()
-        x = 0
-        while True:
-            try:
-                self._embedding.append(model[str(x)])
-                x+=1
-            except:
-                logger.info('found {x} consecutive nodes')
-                break
+        # self._embedding = list()
+        # x = 0
+        # while True:
+        #     try:
+        #         self._embedding.append(self.model[str(x)])
+        #         x+=1
+        #     except:
+        #         logger.info(f'found {x} consecutive nodes')
+        #         break
+
+        # for node in self.model.wv.vocab.keys():
+        #     self._embedding.append([node] + list(self.model[node]))
 
 
     def get_embedding(self):
@@ -121,4 +126,6 @@ class DeepWalk(Estimator):
         Return types:
             * **embedding** *(Numpy array)* - The embedding of nodes.
         """
-        return np.array(self._embedding)
+        # return np.array(self._embedding)
+        for node in self.model.wv.vocab.keys():
+            yield [node] + list(self.model[node])
